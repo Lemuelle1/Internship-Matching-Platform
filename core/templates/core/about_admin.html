@@ -1,0 +1,292 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Page Manager — InternLink Admin</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { background:var(--paper); padding-top:68px; }
+    .admin-header { background:var(--ink); padding:32px 0; margin-bottom:40px; }
+    .admin-header h1 { color:var(--paper); font-size:28px; }
+    .admin-header p  { color:rgba(245,242,235,0.6); margin-top:6px; }
+    .back-link { display:inline-flex; align-items:center; gap:8px; color:var(--accent); font-size:14px; font-weight:600; margin-bottom:16px; }
+    .back-link:hover { text-decoration:underline; }
+
+    .layout { display:grid; grid-template-columns:400px 1fr; gap:32px; align-items:start; }
+
+    /* Form */
+    .form-panel { background:var(--white); border:1px solid var(--border); border-radius:var(--r-xl); padding:32px; position:sticky; top:88px; }
+    .form-panel h2 { font-size:18px; margin-bottom:24px; }
+    .photo-upload-area {
+      border:2px dashed var(--border); border-radius:var(--r-lg);
+      padding:32px; text-align:center; cursor:pointer;
+      transition:border-color .2s; margin-bottom:16px;
+      position:relative; overflow:hidden;
+    }
+    .photo-upload-area:hover { border-color:var(--accent2); }
+    .photo-upload-area input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .photo-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; margin:0 auto 12px; display:none; border:3px solid var(--border); }
+    .photo-upload-icon { font-size:36px; margin-bottom:8px; }
+    .form-stack { display:flex; flex-direction:column; gap:14px; }
+
+    /* Team cards */
+    .team-manage-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:20px; }
+    .manage-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+    .manage-photo { height:160px; background:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+    .manage-photo img { width:100%; height:100%; object-fit:cover; }
+    .manage-initials { font-family:var(--font-head); font-size:40px; font-weight:800; color:var(--ink); }
+    .manage-info { padding:16px; }
+    .manage-name { font-size:15px; font-weight:700; margin-bottom:2px; }
+    .manage-role { font-size:12px; color:var(--accent2); font-weight:600; margin-bottom:12px; }
+    .manage-actions { display:flex; gap:8px; }
+    .drag-hint { font-size:11px; color:var(--muted); text-align:center; margin-bottom:16px; }
+
+    /* Reorder handle */
+    .manage-card { cursor:grab; }
+    .manage-card.dragging { opacity:0.4; transform:scale(0.97); }
+    .manage-card.drag-over { border:2px dashed var(--accent2); }
+
+    /* Preview panel */
+    .preview-strip { display:flex; gap:16px; flex-wrap:wrap; margin-top:24px; }
+    .preview-chip { display:flex; align-items:center; gap:8px; background:var(--cream); border:1px solid var(--border); border-radius:var(--r-full); padding:6px 14px; font-size:13px; }
+    .preview-avatar { width:24px; height:24px; border-radius:50%; background:var(--ink); display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:9px; font-weight:700; overflow:hidden; }
+    .preview-avatar img { width:100%; height:100%; object-fit:cover; }
+  </style>
+</head>
+<body>
+<div id="navbar-root"></div>
+
+<div class="admin-header">
+  <div class="container">
+    <a href="/admin-panel/" class="back-link">← Back to Dashboard</a>
+    <h1>About Page Manager</h1>
+    <p>Add, edit and reorder your team members. Changes appear instantly on the public About page.</p>
+  </div>
+</div>
+
+<div class="container" style="padding-bottom:80px;">
+  <div class="layout">
+
+    <!-- Form -->
+    <div class="form-panel">
+      <h2 id="formTitle">Add Team Member</h2>
+      <input type="hidden" id="editIndex" value="-1">
+
+      <div class="photo-upload-area" id="photoArea">
+        <input type="file" id="photoFile" accept="image/*" onchange="previewPhoto(this)">
+        <img id="photoPreview" class="photo-preview" src="" alt="">
+        <div id="photoPlaceholder">
+          <div class="photo-upload-icon">📷</div>
+          <p style="font-size:13px;font-weight:600;">Click to upload photo</p>
+          <p class="text-muted text-sm mt-8">JPG, PNG — recommended 400×400px</p>
+        </div>
+      </div>
+
+      <div class="form-stack">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-input" id="m-name" placeholder="Kwame Mensah">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role / Position *</label>
+          <input type="text" class="form-input" id="m-role" placeholder="Lead Developer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Short Bio</label>
+          <textarea class="form-textarea" id="m-bio" placeholder="A sentence or two about this person..." style="min-height:80px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">LinkedIn URL</label>
+          <input type="url" class="form-input" id="m-linkedin" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">GitHub URL</label>
+          <input type="url" class="form-input" id="m-github" placeholder="https://github.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Twitter / X URL</label>
+          <input type="url" class="form-input" id="m-twitter" placeholder="https://twitter.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="m-email" placeholder="kwame@example.com">
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button class="btn btn-primary" onclick="saveMember()" id="saveBtn">Add Member</button>
+          <button class="btn btn-outline" onclick="resetForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team List -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="font-size:20px;">Team Members <span id="memberCount" class="badge badge-gray" style="font-size:13px;"></span></h2>
+        <div style="display:flex;gap:10px;">
+          <a href="/about/" target="_blank" class="btn btn-outline btn-sm">Preview About Page ↗</a>
+          <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
+        </div>
+      </div>
+      <p class="drag-hint">Drag cards to reorder team members</p>
+      <div class="team-manage-grid" id="teamManageGrid"></div>
+
+      <!-- Live preview strip -->
+      <div style="margin-top:40px;padding:24px;background:var(--cream);border-radius:var(--r-lg);border:1px solid var(--border);">
+        <p style="font-size:13px;font-weight:700;margin-bottom:12px;">Live preview on About page:</p>
+        <div class="preview-strip" id="previewStrip"></div>
+        <p class="text-muted text-sm mt-16">Changes are saved automatically and visible on the About page instantly.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+if (!requireAdmin()) {}
+document.getElementById('navbar-root').innerHTML = buildNav();
+
+let members = JSON.parse(localStorage.getItem('il_team') || '[]');
+let currentPhotoBase64 = '';
+let dragSrc = null;
+
+function save() { localStorage.setItem('il_team', JSON.stringify(members)); renderGrid(); renderPreview(); }
+
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentPhotoBase64 = e.target.result;
+    const preview = document.getElementById('photoPreview');
+    preview.src = currentPhotoBase64;
+    preview.style.display = 'block';
+    document.getElementById('photoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveMember() {
+  const name = document.getElementById('m-name').value.trim();
+  const role = document.getElementById('m-role').value.trim();
+  if (!name || !role) { toast('Name and Role are required.','error'); return; }
+
+  const member = {
+    name, role,
+    bio:      document.getElementById('m-bio').value.trim(),
+    linkedin: document.getElementById('m-linkedin').value.trim(),
+    github:   document.getElementById('m-github').value.trim(),
+    twitter:  document.getElementById('m-twitter').value.trim(),
+    email:    document.getElementById('m-email').value.trim(),
+    photo:    currentPhotoBase64,
+  };
+
+  const idx = parseInt(document.getElementById('editIndex').value);
+  if (idx >= 0) { members[idx] = member; toast('Member updated!','success'); }
+  else          { members.push(member);  toast('Member added!','success'); }
+
+  save(); resetForm();
+}
+
+function editMember(idx) {
+  const m = members[idx];
+  document.getElementById('editIndex').value  = idx;
+  document.getElementById('formTitle').textContent = 'Edit Team Member';
+  document.getElementById('saveBtn').textContent   = 'Update Member';
+  document.getElementById('m-name').value     = m.name;
+  document.getElementById('m-role').value     = m.role;
+  document.getElementById('m-bio').value      = m.bio || '';
+  document.getElementById('m-linkedin').value = m.linkedin || '';
+  document.getElementById('m-github').value   = m.github || '';
+  document.getElementById('m-twitter').value  = m.twitter || '';
+  document.getElementById('m-email').value    = m.email || '';
+  currentPhotoBase64 = m.photo || '';
+  const preview = document.getElementById('photoPreview');
+  if (m.photo) { preview.src = m.photo; preview.style.display='block'; document.getElementById('photoPlaceholder').style.display='none'; }
+  else          { preview.style.display='none'; document.getElementById('photoPlaceholder').style.display='block'; }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function deleteMember(idx) {
+  if (!confirm('Remove ' + members[idx].name + ' from the team?')) return;
+  members.splice(idx, 1);
+  save();
+  toast('Member removed','success');
+}
+
+function resetForm() {
+  document.getElementById('editIndex').value  = -1;
+  document.getElementById('formTitle').textContent = 'Add Team Member';
+  document.getElementById('saveBtn').textContent   = 'Add Member';
+  ['m-name','m-role','m-bio','m-linkedin','m-github','m-twitter','m-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoPlaceholder').style.display = 'block';
+  document.getElementById('photoFile').value = '';
+  currentPhotoBase64 = '';
+}
+
+function clearAll() {
+  if (!confirm('Remove ALL team members? This cannot be undone.')) return;
+  members = []; save(); toast('All members removed','success');
+}
+
+function initials(name) { return name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(); }
+
+function renderGrid() {
+  const grid = document.getElementById('teamManageGrid');
+  document.getElementById('memberCount').textContent = members.length + ' members';
+  if (!members.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 24px;"><div class="empty-icon">👥</div><h3>No team members yet</h3><p>Add your first team member using the form.</p></div>';
+    return;
+  }
+  grid.innerHTML = members.map((m,i) => `
+    <div class="manage-card" draggable="true" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event)" ondrop="dragDrop(event,${i})" ondragleave="dragLeave(event)">
+      <div class="manage-photo">
+        ${m.photo
+          ? `<img src="${m.photo}" alt="${m.name}">`
+          : `<div class="manage-initials">${initials(m.name)}</div>`
+        }
+      </div>
+      <div class="manage-info">
+        <div class="manage-name">${m.name}</div>
+        <div class="manage-role">${m.role}</div>
+        <div class="manage-actions">
+          <button class="btn btn-outline btn-sm" onclick="editMember(${i})" style="flex:1;">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMember(${i})">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPreview() {
+  const strip = document.getElementById('previewStrip');
+  if (!members.length) { strip.innerHTML = '<p class="text-muted text-sm">No team members added yet.</p>'; return; }
+  strip.innerHTML = members.map(m => `
+    <div class="preview-chip">
+      <div class="preview-avatar">${m.photo?`<img src="${m.photo}" alt="">`:`<span>${initials(m.name)}</span>`}</div>
+      <div><div style="font-size:12px;font-weight:600;">${m.name}</div><div style="font-size:11px;color:var(--muted);">${m.role}</div></div>
+    </div>
+  `).join('');
+}
+
+// Drag to reorder
+function dragStart(e, idx) { dragSrc = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); e.dataTransfer.dropEffect = 'move'; }
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function dragDrop(e, idx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragSrc === null || dragSrc === idx) return;
+  const moved = members.splice(dragSrc, 1)[0];
+  members.splice(idx, 0, moved);
+  dragSrc = null;
+  save();
+}
+
+renderGrid();
+renderPreview();
+</script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — InternLink</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { background:var(--paper); }
+    .dash-layout { display:grid; grid-template-columns:260px 1fr; min-height:100vh; padding-top:68px; }
+    .sidebar { background:var(--white); border-right:1px solid var(--border); padding:32px 20px; position:fixed; top:68px; left:0; width:260px; height:calc(100vh - 68px); overflow-y:auto; }
+    .sidebar-section { margin-bottom:32px; }
+    .sidebar-label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; padding:0 12px; }
+    .sidebar-nav { display:flex; flex-direction:column; gap:4px; }
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-md); font-size:14px; font-weight:500; color:var(--muted); transition:all .15s; cursor:pointer; }
+    .sidebar-link:hover { background:var(--cream); color:var(--ink); }
+    .sidebar-link.active { background:var(--ink); color:var(--paper); }
+    .sidebar-link .icon { font-size:16px; }
+    .sidebar-user { display:flex; align-items:center; gap:12px; padding:16px; background:var(--cream); border-radius:var(--r-lg); margin-bottom:24px; }
+    .sidebar-user .avatar { width:40px; height:40px; border-radius:50%; background:var(--ink); color:var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-head); font-weight:700; font-size:15px; flex-shrink:0; }
+    .sidebar-user .name { font-size:14px; font-weight:600; }
+    .sidebar-user .role { font-size:12px; color:var(--muted); }
+    .main { margin-left:260px; padding:40px; min-height:calc(100vh - 68px); }
+    .page-section { display:none; }
+    .page-section.active { display:block; }
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:32px; }
+    .stat-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+    .stat-card .num { font-family:var(--font-head); font-size:32px; font-weight:800; margin-bottom:4px; }
+    .stat-card .lbl { font-size:13px; color:var(--muted); }
+    .opp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+    .opp-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; transition:all .2s; }
+    .opp-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .opp-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+    .opp-company { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .opp-title { font-size:16px; font-weight:700; margin-bottom:8px; }
+    .opp-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .opp-detail { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+    .filter-bar { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; align-items:center; }
+    .search-input { flex:1; min-width:200px; }
+
+    /* ── Profile form: full-width, tall, readable inputs ── */
+    .profile-form { max-width:760px; width:100%; }
+    .profile-form .form-stack { display:flex; flex-direction:column; gap:24px; width:100%; }
+    .profile-form .form-group { display:flex; flex-direction:column; gap:6px; width:100%; }
+    .profile-form .form-label { font-size:13px; font-weight:600; color:var(--ink); }
+    .profile-form .form-input,
+    .profile-form .form-select { width:100%; box-sizing:border-box; height:48px; padding:0 16px; font-size:15px; border:1.5px solid var(--border); border-radius:var(--r-md); background:var(--white); color:var(--ink); transition:border-color .15s; }
+    .profile-form .form-input:focus,
+    .profile-form .form-select:focus { outline:none; border-color:var(--ink); }
+    .profile-form .form-textarea { width:100%; box-sizing:border-box; min-height:140px; padding:14px 16px; font-size:15px; font-family:inherit; line-height:1.6; border:1.5px solid var(--border); border-radius:var(--r-md); background:var(--white); color:var(--ink); resize:vertical; transition:border-color .15s; }
+    .profile-form .form-textarea:focus { outline:none; border-color:var(--ink); }
+    .profile-form .form-input::placeholder,
+    .profile-form .form-textarea::placeholder { color:var(--muted); opacity:.7; }
+
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .cv-upload-area { border:2px dashed var(--border); border-radius:var(--r-lg); padding:40px; text-align:center; cursor:pointer; transition:border-color .2s; }
+    .cv-upload-area:hover { border-color:var(--ink); }
+    .cv-upload-area input { display:none; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+    .section-header h2 { font-size:22px; }
+  </style>
+</head>
+<body>
+<div id="navbar-root"></div>
+
+<div class="dash-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="avatar" id="sidebarAvatar">U</div>
+      <div><div class="name" id="sidebarName">Loading...</div><div class="role">Student</div></div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-link active" data-page="overview"><span class="icon">📊</span> Overview</div>
+      <div class="sidebar-link" data-page="opportunities"><span class="icon">🔍</span> Browse Opportunities</div>
+      <div class="sidebar-link" data-page="applications"><span class="icon">📋</span> My Applications</div>
+      <div class="sidebar-link" data-page="profile"><span class="icon">👤</span> My Profile</div>
+      <div class="sidebar-link" data-page="cv"><span class="icon">📄</span> Upload CV</div>
+      <div class="sidebar-link" style="margin-top:24px;color:var(--danger);" onclick="logout()"><span class="icon">🚪</span> Logout</div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page-section active" id="page-overview">
+      <div class="section-header">
+        <div><h2>Welcome back 👋</h2><p class="text-muted text-sm mt-8" id="welcomeMsg">Here's what's happening.</p></div>
+      </div>
+      <div class="stat-grid" id="statsGrid">
+        <div class="stat-card"><div class="num" id="s-total">—</div><div class="lbl">Total Applications</div></div>
+        <div class="stat-card"><div class="num" id="s-pending" style="color:var(--warning)">—</div><div class="lbl">Pending</div></div>
+        <div class="stat-card"><div class="num" id="s-accepted" style="color:var(--success)">—</div><div class="lbl">Accepted</div></div>
+        <div class="stat-card"><div class="num" id="s-opps">—</div><div class="lbl">Open Opportunities</div></div>
+      </div>
+      <div class="section-header mt-32">
+        <h2 style="font-size:18px;">Recent Applications</h2>
+        <button class="btn btn-outline btn-sm" onclick="showPage('applications')">View all</button>
+      </div>
+      <div class="table-wrap" id="recentAppsTable"><div class="empty-state"><div class="empty-icon">📋</div><h3>No applications yet</h3><p>Browse opportunities and apply today.</p></div></div>
+    </div>
+
+    <!-- OPPORTUNITIES -->
+    <div class="page-section" id="page-opportunities">
+      <div class="section-header">
+        <h2>Browse Opportunities</h2>
+      </div>
+      <div class="filter-bar">
+        <input type="text" class="form-input search-input" id="oppSearch" placeholder="🔍  Search opportunities...">
+        <select class="form-select" id="oppType" style="width:160px;">
+          <option value="">All Types</option>
+          <option value="INTERNSHIP">Internship</option>
+          <option value="SCHOLARSHIP">Scholarship</option>
+        </select>
+        <select class="form-select" id="oppMode" style="width:160px;">
+          <option value="">All Modes</option>
+          <option value="REMOTE">Remote</option>
+          <option value="ONSITE">On-site</option>
+          <option value="HYBRID">Hybrid</option>
+        </select>
+      </div>
+      <div class="opp-grid" id="oppGrid"><div class="flex-center" style="grid-column:1/-1;padding:60px;"><div class="spinner dark"></div></div></div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="page-section" id="page-applications">
+      <div class="section-header"><h2>My Applications</h2></div>
+      <div class="table-wrap" id="appsTable"><div class="flex-center" style="padding:40px;"><div class="spinner dark"></div></div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page-section" id="page-profile">
+      <div class="section-header"><h2>My Profile</h2></div>
+      <div class="profile-form">
+        <form class="form-stack" id="profileForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-input" id="p-phone" placeholder="+237 ...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Level</label>
+              <select class="form-select" id="p-level">
+                <option value="">Select level</option>
+                <option value="HND">HND</option>
+                <option value="DEGREE">Degree</option>
+                <option value="MASTERS">Masters</option>
+                <option value="PHD">PhD</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">University</label>
+            <input type="text" class="form-input" id="p-university" placeholder="University of Yaoundé">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Course / Programme</label>
+            <input type="text" class="form-input" id="p-course" placeholder="Computer Science">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GPA</label>
+            <input type="number" class="form-input" id="p-gpa" placeholder="3.75" step="0.01" min="0" max="4">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Skills <span class="text-muted">(comma separated)</span></label>
+            <input type="text" class="form-input" id="p-skills" placeholder="Python, Django, React, SQL">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="form-textarea" id="p-bio" placeholder="Tell employers about yourself..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">LinkedIn URL</label>
+              <input type="url" class="form-input" id="p-linkedin" placeholder="https://linkedin.com/in/...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">GitHub URL</label>
+              <input type="url" class="form-input" id="p-github" placeholder="https://github.com/...">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Profile</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- CV UPLOAD -->
+    <div class="page-section" id="page-cv">
+      <div class="section-header"><h2>Upload CV</h2></div>
+      <div style="max-width:500px;">
+        <div class="cv-upload-area" id="cvArea" onclick="document.getElementById('cvFile').click()">
+          <input type="file" id="cvFile" accept=".pdf">
+          <div style="font-size:48px;margin-bottom:16px;">📄</div>
+          <h3 style="margin-bottom:8px;">Click to upload your CV</h3>
+          <p class="text-muted text-sm">PDF files only. Max 10MB.</p>
+          <p class="text-muted text-sm mt-8" id="cvFileName"></p>
+        </div>
+        <button class="btn btn-primary mt-16" id="uploadCvBtn" onclick="uploadCV()" disabled>Upload CV</button>
+        <div id="currentCV" class="mt-24" style="display:none;">
+          <p class="fw-700 mb-8">Current CV:</p>
+          <a id="cvLink" href="#" target="_blank" class="btn btn-outline btn-sm">📄 View / Download CV</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Apply Modal -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="applyModalTitle">Apply</h3>
+      <button class="modal-close" onclick="closeModal('applyModal')">✕</button>
+    </div>
+    <input type="hidden" id="applyOppId">
+    <div class="form-group">
+      <label class="form-label">Cover Letter <span class="text-muted">(optional)</span></label>
+      <textarea class="form-textarea" id="coverLetter" placeholder="Tell the employer why you are the right candidate..." style="min-height:160px;"></textarea>
+    </div>
+    <div class="flex gap-12 mt-24">
+      <button class="btn btn-primary" id="submitApplyBtn" onclick="submitApplication()">Submit Application</button>
+      <button class="btn btn-outline" onclick="closeModal('applyModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+  // Auth guard — students only
+  if (!requireAuth() || Auth.isAdmin()) { window.location.href = '/admin-panel/'; }
+
+  document.getElementById('navbar-root').innerHTML = buildNav('dashboard');
+
+  const user = Auth.getUser();
+  document.getElementById('sidebarName').textContent = user?.first_name + ' ' + user?.last_name;
+  document.getElementById('sidebarAvatar').textContent = (user?.first_name[0]||'') + (user?.last_name[0]||'');
+  document.getElementById('welcomeMsg').textContent = 'Welcome, ' + user?.first_name + '! Here\'s your overview.';
+
+  // Sidebar navigation
+  document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      showPage(link.dataset.page);
+    });
+  });
+
+  function showPage(page) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('page-' + page)?.classList.add('active');
+    if (page === 'overview')      loadOverview();
+    if (page === 'opportunities') loadOpportunities();
+    if (page === 'applications')  loadApplications();
+    if (page === 'profile')       loadProfile();
+    if (page === 'cv')            loadCV();
+  }
+
+  // ── Overview / Stats ──────────────────────────────────────────
+  async function loadOverview() {
+    try {
+      const stats = await apiFetch('/dashboard/stats/');
+      document.getElementById('s-total').textContent   = stats.total_applications;
+      document.getElementById('s-pending').textContent  = stats.pending;
+      document.getElementById('s-accepted').textContent = stats.accepted;
+      document.getElementById('s-opps').textContent     = stats.open_opportunities;
+      loadRecentApps();
+    } catch(e) { toast('Could not load stats', 'error'); }
+  }
+
+  async function loadRecentApps() {
+    const container = document.getElementById('recentAppsTable');
+    try {
+      const data = await apiFetch('/applications/mine/');
+      const apps = data.results || data;
+      if (!apps.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>No applications yet</h3><p>Browse opportunities and apply today.</p></div>';
+        return;
+      }
+      container.innerHTML = `<table><thead><tr><th>Opportunity</th><th>Company</th><th>Applied</th><th>Status</th></tr></thead><tbody>
+        ${apps.slice(0,5).map(a=>`<tr>
+          <td class="fw-700">${a.opportunity_title}</td>
+          <td>${a.opportunity_company}</td>
+          <td>${timeAgo(a.applied_at)}</td>
+          <td>${statusBadge(a.status)}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch(e) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><h3>Could not load data</h3></div>';
+    }
+  }
+
+  // ── Opportunities ─────────────────────────────────────────────
+  let allOpps = [];
+  async function loadOpportunities() {
+    const grid = document.getElementById('oppGrid');
+    grid.innerHTML = '<div class="flex-center" style="grid-column:1/-1;padding:60px;"><div class="spinner dark"></div></div>';
+    try {
+      const data = await apiFetch('/opportunities/');
+      allOpps = data.results || data;
+      renderOpps(allOpps);
+    } catch(e) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">😕</div><h3>Could not load opportunities</h3></div>';
+    }
+  }
+
+  function renderOpps(list) {
+    const grid = document.getElementById('oppGrid');
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No opportunities found</h3><p>Try different filters.</p></div>';
+      return;
+    }
+    grid.innerHTML = list.map(o => `
+      <div class="opp-card">
+        <div class="opp-card-top">
+          ${statusBadge(o.type)}
+          <span class="badge badge-gray">${o.mode}</span>
+        </div>
+        <div class="opp-company">${o.company}${o.location ? ' • '+o.location : ''}</div>
+        <div class="opp-title">${o.title}</div>
+        <div class="opp-meta">
+          ${o.stipend  ? `<span class="opp-detail">💰 ${o.stipend}</span>` : ''}
+          ${o.duration ? `<span class="opp-detail">⏱ ${o.duration}</span>` : ''}
+          <span class="opp-detail">📅 ${formatDate(o.deadline)}</span>
+        </div>
+        ${o.has_applied
+          ? '<button class="btn btn-outline btn-sm w-full" disabled>✓ Applied</button>'
+          : `<button class="btn btn-primary btn-sm w-full" onclick="openApply(${o.id},'${o.title.replace(/'/g,"\\'")}')">Apply Now</button>`
+        }
+      </div>
+    `).join('');
+  }
+
+  // Search & filter
+  const doSearch = debounce(() => {
+    const q    = document.getElementById('oppSearch').value.toLowerCase();
+    const type = document.getElementById('oppType').value;
+    const mode = document.getElementById('oppMode').value;
+    renderOpps(allOpps.filter(o =>
+      (!q    || o.title.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)) &&
+      (!type || o.type === type) &&
+      (!mode || o.mode === mode)
+    ));
+  });
+  document.getElementById('oppSearch').addEventListener('input', doSearch);
+  document.getElementById('oppType').addEventListener('change', doSearch);
+  document.getElementById('oppMode').addEventListener('change', doSearch);
+
+  // Apply modal
+  function openApply(id, title) {
+    document.getElementById('applyOppId').value = id;
+    document.getElementById('applyModalTitle').textContent = 'Apply — ' + title;
+    document.getElementById('coverLetter').value = '';
+    openModal('applyModal');
+  }
+  async function submitApplication() {
+    const btn = document.getElementById('submitApplyBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Submitting...';
+    try {
+      await apiFetch('/applications/', { method:'POST', body: JSON.stringify({
+        opportunity:  parseInt(document.getElementById('applyOppId').value),
+        cover_letter: document.getElementById('coverLetter').value
+      })});
+      toast('Application submitted!', 'success');
+      closeModal('applyModal');
+      loadOpportunities();
+    } catch(e) { toast(e.message, 'error'); }
+    btn.disabled = false; btn.innerHTML = 'Submit Application';
+  }
+
+  // ── My Applications ───────────────────────────────────────────
+  async function loadApplications() {
+    const container = document.getElementById('appsTable');
+    try {
+      const data = await apiFetch('/applications/mine/');
+      const apps = data.results || data;
+      if (!apps.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>No applications yet</h3><p>Browse opportunities and apply.</p></div>';
+        return;
+      }
+      container.innerHTML = `<table><thead><tr><th>Opportunity</th><th>Company</th><th>Applied</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        ${apps.map(a=>`<tr>
+          <td class="fw-700">${a.opportunity_title}</td>
+          <td>${a.opportunity_company}</td>
+          <td>${timeAgo(a.applied_at)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td>${a.status==='PENDING'?`<button class="btn btn-danger btn-sm" onclick="withdrawApp(${a.id})">Withdraw</button>`:''}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch(e) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><h3>Could not load applications</h3></div>';
+    }
+  }
+
+  async function withdrawApp(id) {
+    if (!confirm('Withdraw this application?')) return;
+    try {
+      await apiFetch(`/applications/${id}/withdraw/`, { method:'DELETE' });
+      toast('Application withdrawn', 'success');
+      loadApplications();
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  // ── Profile ───────────────────────────────────────────────────
+  async function loadProfile() {
+    try {
+      const data = await apiFetch('/profile/');
+      document.getElementById('p-phone').value      = data.phone      || '';
+      document.getElementById('p-university').value = data.university  || '';
+      document.getElementById('p-course').value     = data.course      || '';
+      document.getElementById('p-level').value      = data.level       || '';
+      document.getElementById('p-gpa').value        = data.gpa         || '';
+      document.getElementById('p-skills').value     = data.skills      || '';
+      document.getElementById('p-bio').value        = data.bio         || '';
+      document.getElementById('p-linkedin').value   = data.linkedin    || '';
+      document.getElementById('p-github').value     = data.github      || '';
+    } catch(e) {}
+  }
+
+  document.getElementById('profileForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('saveProfileBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
+    try {
+      await apiFetch('/profile/', { method:'PATCH', body: JSON.stringify({
+        phone:      document.getElementById('p-phone').value,
+        university: document.getElementById('p-university').value,
+        course:     document.getElementById('p-course').value,
+        level:      document.getElementById('p-level').value,
+        gpa:        document.getElementById('p-gpa').value || null,
+        skills:     document.getElementById('p-skills').value,
+        bio:        document.getElementById('p-bio').value,
+        linkedin:   document.getElementById('p-linkedin').value,
+        github:     document.getElementById('p-github').value,
+      })});
+      toast('Profile saved!', 'success');
+    } catch(e) { toast(e.message, 'error'); }
+    btn.disabled = false; btn.innerHTML = 'Save Profile';
+  });
+
+  // ── CV Upload ─────────────────────────────────────────────────
+  function loadCV() {
+    apiFetch('/profile/').then(data => {
+      if (data.cv_url) {
+        document.getElementById('currentCV').style.display = 'block';
+        document.getElementById('cvLink').href = data.cv_url;
+      }
+    }).catch(()=>{});
+  }
+
+  document.getElementById('cvFile').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) {
+      document.getElementById('cvFileName').textContent = f.name;
+      document.getElementById('uploadCvBtn').disabled = false;
+    }
+  });
+
+  async function uploadCV() {
+    const f = document.getElementById('cvFile').files[0];
+    if (!f) { toast('Please select a file', 'error'); return; }
+    const btn = document.getElementById('uploadCvBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Uploading...';
+    const fd = new FormData(); fd.append('cv', f);
+    try {
+      await apiFetch('/profile/cv/', { method:'POST', body: fd, headers:{} });
+      toast('CV uploaded successfully!', 'success');
+      loadCV();
+    } catch(e) { toast(e.message, 'error'); }
+    btn.disabled = false; btn.innerHTML = 'Upload CV';
+  }
+
+  loadOverview();
+</script>
+</body>
+</html>

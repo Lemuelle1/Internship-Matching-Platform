@@ -1,0 +1,339 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — InternLink</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { padding-top:68px; }
+
+    /* ── HERO ────────────────────────────────────────────────── */
+    .about-hero {
+      background: var(--ink);
+      padding: 100px 0 80px;
+      position: relative; overflow: hidden;
+    }
+    .about-hero::before {
+      content:'';
+      position:absolute; top:-100px; right:-100px;
+      width:500px; height:500px;
+      background: var(--accent);
+      border-radius:50%; opacity:.06;
+    }
+    .about-hero::after {
+      content:'';
+      position:absolute; bottom:-80px; left:-80px;
+      width:350px; height:350px;
+      background: var(--accent2);
+      border-radius:50%; opacity:.08;
+    }
+    .about-hero-content { position:relative; z-index:1; text-align:center; }
+    .about-eyebrow {
+      display:inline-flex; align-items:center; gap:8px;
+      background: rgba(200,240,0,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(200,240,0,0.3);
+      padding:6px 16px; border-radius:var(--r-full);
+      font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+      margin-bottom:24px;
+    }
+    .about-hero h1 { font-size:clamp(40px,6vw,72px); color:var(--paper); margin-bottom:20px; }
+    .about-hero h1 em { font-style:normal; color:var(--accent); }
+    .about-hero p { font-size:18px; color:rgba(245,242,235,0.65); max-width:580px; margin:0 auto; line-height:1.7; }
+
+    /* ── MISSION ─────────────────────────────────────────────── */
+    .mission-section { padding:80px 0; }
+    .mission-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+    .mission-text h2 { font-size:clamp(28px,4vw,42px); margin-bottom:20px; }
+    .mission-text p { color:var(--muted); line-height:1.8; font-size:15px; margin-bottom:16px; }
+    .mission-visual {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 40px;
+      display: grid; grid-template-columns:1fr 1fr; gap:16px;
+    }
+    .mission-stat {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      text-align:center;
+    }
+    .mission-stat .big { font-family:var(--font-head); font-size:36px; font-weight:800; color:var(--ink); }
+    .mission-stat .lbl { font-size:13px; color:var(--muted); margin-top:4px; }
+
+    /* ── VALUES ──────────────────────────────────────────────── */
+    .values-section { background:var(--cream); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:80px 0; }
+    .values-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:24px; margin-top:48px; }
+    .value-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 32px 24px;
+      text-align: center;
+      transition: all .2s;
+    }
+    .value-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
+    .value-icon { font-size:36px; margin-bottom:16px; }
+    .value-card h3 { font-size:17px; margin-bottom:10px; }
+    .value-card p { font-size:13px; color:var(--muted); line-height:1.6; }
+
+    /* ── TEAM ────────────────────────────────────────────────── */
+    .team-section { padding:80px 0; }
+    .team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:28px; margin-top:48px; }
+    .team-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      transition: all .25s;
+      text-align: center;
+    }
+    .team-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-5px); }
+    .team-photo-wrap {
+      height: 220px;
+      background: var(--cream);
+      display: flex; align-items:center; justify-content:center;
+      overflow: hidden;
+      position: relative;
+    }
+    .team-photo-wrap img { width:100%; height:100%; object-fit:cover; }
+    .team-initials {
+      font-family: var(--font-head);
+      font-size: 52px; font-weight: 800;
+      color: var(--ink);
+      background: linear-gradient(135deg,var(--accent),rgba(200,240,0,0.3));
+      width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .team-info { padding: 24px; }
+    .team-name { font-size:17px; font-weight:700; margin-bottom:4px; }
+    .team-role {
+      font-size:13px; font-weight:600;
+      color:var(--accent2); margin-bottom:12px;
+    }
+    .team-bio { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:16px; }
+    .team-socials { display:flex; justify-content:center; gap:10px; }
+    .social-link {
+      width:34px; height:34px; border-radius:50%;
+      background:var(--cream); border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; transition:all .15s; color:var(--muted);
+      text-decoration:none;
+    }
+    .social-link:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+    .empty-team {
+      grid-column:1/-1; text-align:center; padding:80px 24px;
+      color:var(--muted);
+    }
+    .empty-team .icon { font-size:56px; margin-bottom:20px; opacity:.5; }
+
+    /* ── TIMELINE ────────────────────────────────────────────── */
+    .timeline-section { background:var(--ink); padding:80px 0; }
+    .timeline-section h2 { color:var(--paper); text-align:center; margin-bottom:56px; font-size:clamp(28px,4vw,42px); }
+    .timeline { position:relative; max-width:680px; margin:0 auto; }
+    .timeline::before { content:''; position:absolute; left:50%; top:0; bottom:0; width:2px; background:rgba(255,255,255,0.1); transform:translateX(-50%); }
+    .timeline-item { display:flex; gap:32px; margin-bottom:40px; position:relative; }
+    .timeline-item:nth-child(odd)  { flex-direction:row; }
+    .timeline-item:nth-child(even) { flex-direction:row-reverse; }
+    .timeline-dot { position:absolute; left:50%; top:4px; width:14px; height:14px; background:var(--accent); border-radius:50%; transform:translateX(-50%); border:3px solid var(--ink); }
+    .timeline-content { width:calc(50% - 32px); }
+    .timeline-item:nth-child(odd)  .timeline-content { text-align:right; }
+    .timeline-item:nth-child(even) .timeline-content { text-align:left; }
+    .timeline-year { font-size:12px; color:var(--accent); font-weight:700; letter-spacing:.08em; margin-bottom:4px; }
+    .timeline-title { font-size:16px; font-weight:700; color:var(--paper); margin-bottom:6px; }
+    .timeline-text { font-size:13px; color:rgba(245,242,235,0.5); line-height:1.6; }
+
+    /* ── CTA ─────────────────────────────────────────────────── */
+    .about-cta { padding:80px 0; text-align:center; }
+    .about-cta h2 { font-size:clamp(28px,4vw,42px); margin-bottom:16px; }
+    .about-cta p { color:var(--muted); margin-bottom:36px; font-size:16px; }
+
+    @media(max-width:768px) { .mission-grid { grid-template-columns:1fr; } .timeline::before { left:16px; } .timeline-item,.timeline-item:nth-child(even) { flex-direction:column; } .timeline-content,.timeline-item:nth-child(odd) .timeline-content { width:100%; text-align:left; padding-left:40px; } .timeline-dot { left:16px; } }
+  </style>
+</head>
+<body>
+<div id="navbar-root"></div>
+
+<!-- HERO -->
+<section class="about-hero">
+  <div class="container">
+    <div class="about-hero-content">
+      <div class="about-eyebrow">👋 Our story</div>
+      <h1>Built by students,<br>for <em>students</em></h1>
+      <p>We believe every student deserves access to life-changing internships and scholarships. InternLink was born from that belief.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MISSION -->
+<section class="mission-section">
+  <div class="container">
+    <div class="mission-grid">
+      <div class="mission-text">
+        <h2>Our Mission</h2>
+        <p>InternLink exists to bridge the gap between talented students and the opportunities that will define their careers. Too many students miss out simply because they don't know where to look or don't have the right connections.</p>
+        <p>We're changing that — one application at a time. By centralizing internships and scholarships in one platform, we make it easy for any student to discover, apply, and track their journey toward a brighter future.</p>
+        <p>From a first-year HND student to a final-year degree candidate — InternLink is for everyone.</p>
+      </div>
+      <div class="mission-visual">
+        <div class="mission-stat"><div class="big" id="m-opps">600+</div><div class="lbl">Opportunities</div></div>
+        <div class="mission-stat"><div class="big" id="m-students">300+</div><div class="lbl">Students</div></div>
+        <div class="mission-stat"><div class="big">100%</div><div class="lbl">Free forever</div></div>
+        <div class="mission-stat"><div class="big">ICTU</div><div class="lbl">Made by Group</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VALUES -->
+<section class="values-section">
+  <div class="container">
+    <div class="text-center">
+      <h2 style="font-size:clamp(28px,4vw,42px);">What we stand for</h2>
+      <p class="text-muted mt-8" style="font-size:16px;">The principles that guide every decision we make.</p>
+    </div>
+    <div class="values-grid">
+      <div class="value-card"><div class="value-icon">🎯</div><h3>Access for All</h3><p>Every student, regardless of background or connections, deserves equal access to opportunities.</p></div>
+      <div class="value-card"><div class="value-icon">🔒</div><h3>Trust & Safety</h3><p>We verify opportunities and protect student data with industry-standard security practices.</p></div>
+      <div class="value-card"><div class="value-icon">⚡</div><h3>Simplicity</h3><p>From registration to application — we keep everything fast, clear, and intuitive.</p></div>
+      <div class="value-card"><div class="value-icon">🌱</div><h3>Growth Mindset</h3><p>We're always improving. Student feedback drives every new feature we build.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section class="team-section">
+  <div class="container">
+    <div class="text-center">
+      <h2 style="font-size:clamp(28px,4vw,42px);">Meet the team</h2>
+      <p class="text-muted mt-8" style="font-size:16px;">The passionate people building InternLink.</p>
+    </div>
+    <div class="team-grid" id="teamGrid">
+      <div class="flex-center" style="grid-column:1/-1;padding:60px;"><div class="spinner dark" style="width:32px;height:32px;"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="timeline-section">
+  <div class="container">
+    <h2>Our Journey</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-year">2025 — Q1</div>
+          <div class="timeline-title">The Idea</div>
+          <div class="timeline-text">Frustrated by the lack of a central platform for student opportunities, our team decided to build the solution.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-year">2025 — Q3</div>
+          <div class="timeline-title">Development Begins</div>
+          <div class="timeline-text">Built with Django and vanilla JavaScript. First prototype completed in 8 weeks.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-year">2025 — Q1</div>
+          <div class="timeline-title">Beta Launch</div>
+          <div class="timeline-text">InternLink opens to first students. First 50 opportunities posted within the first month.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-year">2026 — Now</div>
+          <div class="timeline-title">Growing Fast</div>
+          <div class="timeline-text">Hundreds of students using InternLink. New features added every sprint based on user feedback.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="about-cta">
+  <div class="container">
+    <h2>Ready to join InternLink?</h2>
+    <p>Create your free account and start applying for opportunities today.</p>
+    <div class="flex-center gap-16" style="flex-wrap:wrap;">
+      <a href="/register/" class="btn btn-primary btn-lg">Create Free Account</a>
+      <a href="/opportunities/" class="btn btn-outline btn-lg">Browse Opportunities</a>
+    </div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid var(--border);padding:40px 0;">
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+      <div style="font-family:var(--font-head);font-size:22px;font-weight:800;">Intern<span style="color:var(--accent2);">Link</span><span class="logo-dot" style="display:inline-block;"></span></div>
+      <div style="display:flex;gap:24px;"><a href="/opportunities/" style="font-size:13px;color:var(--muted);">Opportunities</a><a href="/login/" style="font-size:13px;color:var(--muted);">Login</a><a href="/register/" style="font-size:13px;color:var(--muted);">Register</a></div>
+      <p style="font-size:13px;color:var(--muted);">© 2026 InternLink. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+document.getElementById('navbar-root').innerHTML = buildNav('about');
+
+// Load stats
+async function loadStats() {
+  try {
+    const s = await apiFetch('/admin/stats/');
+    document.getElementById('m-opps').textContent     = s.open_opportunities || '0';
+    document.getElementById('m-students').textContent = s.total_students || '0';
+  } catch {}
+}
+
+// Load team from localStorage (managed by admin panel)
+function loadTeam() {
+  const grid = document.getElementById('teamGrid');
+  const members = JSON.parse(localStorage.getItem('il_team') || '[]');
+
+  if (!members.length) {
+    grid.innerHTML = `
+      <div class="empty-team">
+        <div class="icon">👥</div>
+        <h3>Team members coming soon</h3>
+        <p>The admin can add team members from the.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = members.map(m => `
+    <div class="team-card">
+      <div class="team-photo-wrap">
+        ${m.photo
+          ? `<img src="${m.photo}" alt="${m.name}">`
+          : `<div class="team-initials">${m.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>`
+        }
+      </div>
+      <div class="team-info">
+        <div class="team-name">${m.name}</div>
+        <div class="team-role">${m.role}</div>
+        <div class="team-bio">${m.bio || ''}</div>
+        <div class="team-socials">
+          ${m.linkedin ? `<a href="${m.linkedin}" target="_blank" class="social-link" title="LinkedIn">in</a>` : ''}
+          ${m.github   ? `<a href="${m.github}"   target="_blank" class="social-link" title="GitHub">⌥</a>` : ''}
+          ${m.twitter  ? `<a href="${m.twitter}"  target="_blank" class="social-link" title="Twitter">𝕏</a>` : ''}
+          ${m.email    ? `<a href="mailto:${m.email}" class="social-link" title="Email">@</a>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+loadStats();
+loadTeam();
+</script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — InternLink</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { background:var(--paper); }
+    .dash-layout { display:grid; grid-template-columns:260px 1fr; min-height:100vh; padding-top:68px; }
+    .sidebar { background:var(--ink); padding:32px 20px; position:fixed; top:68px; left:0; width:260px; height:calc(100vh - 68px); overflow-y:auto; }
+    .sidebar-nav { display:flex; flex-direction:column; gap:4px; }
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-md); font-size:14px; font-weight:500; color:rgba(245,242,235,0.6); transition:all .15s; cursor:pointer; }
+    .sidebar-link:hover { background:rgba(255,255,255,0.08); color:var(--paper); }
+    .sidebar-link.active { background:var(--accent); color:var(--ink); }
+    .sidebar-logo { font-family:var(--font-head); font-size:20px; font-weight:800; color:var(--paper); margin-bottom:32px; display:flex; align-items:center; gap:6px; }
+    .sidebar-logo span { color:var(--accent); }
+    .sidebar-sep { height:1px; background:rgba(255,255,255,0.1); margin:16px 0; }
+    .main { margin-left:260px; padding:40px; }
+    .page-section { display:none; }
+    .page-section.active { display:block; }
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:32px; }
+    .stat-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+    .stat-card .num { font-family:var(--font-head); font-size:32px; font-weight:800; margin-bottom:4px; }
+    .stat-card .lbl { font-size:13px; color:var(--muted); }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+    .section-header h2 { font-size:22px; }
+    .filter-bar { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+    .search-input { flex:1; min-width:200px; }
+  </style>
+</head>
+<body>
+<div id="navbar-root"></div>
+
+<div class="dash-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Intern<span>Link</span></div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;padding:0 12px;">Admin Panel</p>
+    <div class="sidebar-nav">
+      <div class="sidebar-link active" data-page="overview"><span>📊</span> Overview</div>
+      <div class="sidebar-link" data-page="opportunities"><span>📌</span> Opportunities</div>
+      <div class="sidebar-link" data-page="applications"><span>📋</span> Applications</div>
+      <div class="sidebar-link" data-page="students"><span>👥</span> Students</div>
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-link" onclick="window.location.href='/about-admin/'"><span>👤</span> Manage About Page</div>
+      <div class="sidebar-link" onclick="logout()" style="color:rgba(239,68,68,0.8);margin-top:8px;"><span>🚪</span> Logout</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page-section active" id="page-overview">
+      <div class="section-header"><h2>Dashboard Overview</h2><p class="text-muted text-sm" id="adminWelcome"></p></div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="num" id="a-students">—</div><div class="lbl">Total Students</div></div>
+        <div class="stat-card"><div class="num" id="a-opps" style="color:var(--blue)">—</div><div class="lbl">Total Opportunities</div></div>
+        <div class="stat-card"><div class="num" id="a-open" style="color:var(--success)">—</div><div class="lbl">Open Opportunities</div></div>
+        <div class="stat-card"><div class="num" id="a-apps">—</div><div class="lbl">Total Applications</div></div>
+        <div class="stat-card"><div class="num" id="a-pending" style="color:var(--warning)">—</div><div class="lbl">Pending Review</div></div>
+      </div>
+      <div class="section-header mt-32">
+        <h2 style="font-size:18px;">Recent Applications</h2>
+        <button class="btn btn-outline btn-sm" onclick="showPage('applications')">View all</button>
+      </div>
+      <div class="table-wrap" id="recentAdminApps"></div>
+    </div>
+
+    <!-- OPPORTUNITIES -->
+    <div class="page-section" id="page-opportunities">
+      <div class="section-header">
+        <h2>Opportunities</h2>
+        <button class="btn btn-primary" onclick="openOppModal()">+ Add Opportunity</button>
+      </div>
+      <div class="filter-bar">
+        <input type="text" class="form-input search-input" id="adminOppSearch" placeholder="🔍  Search...">
+        <select class="form-select" id="adminOppType" style="width:160px;">
+          <option value="">All Types</option>
+          <option value="INTERNSHIP">Internship</option>
+          <option value="SCHOLARSHIP">Scholarship</option>
+        </select>
+        <select class="form-select" id="adminOppStatus" style="width:140px;">
+          <option value="">All Status</option>
+          <option value="OPEN">Open</option>
+          <option value="CLOSED">Closed</option>
+        </select>
+      </div>
+      <div class="table-wrap" id="oppsAdminTable"></div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="page-section" id="page-applications">
+      <div class="section-header"><h2>All Applications</h2></div>
+      <div class="filter-bar">
+        <input type="text" class="form-input search-input" id="adminAppSearch" placeholder="🔍  Search by student or opportunity...">
+        <select class="form-select" id="adminAppStatus" style="width:160px;">
+          <option value="">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="REVIEWED">Reviewed</option>
+          <option value="ACCEPTED">Accepted</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+      <div class="table-wrap" id="appsAdminTable"></div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="page-section" id="page-students">
+      <div class="section-header"><h2>Registered Students</h2></div>
+      <div class="filter-bar">
+        <input type="text" class="form-input search-input" id="studentSearch" placeholder="🔍  Search students...">
+      </div>
+      <div class="table-wrap" id="studentsTable"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Opportunity Modal -->
+<div class="modal-overlay" id="oppModal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="oppModalTitle">Add Opportunity</h3>
+      <button class="modal-close" onclick="closeModal('oppModal')">✕</button>
+    </div>
+    <input type="hidden" id="oppEditId">
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="opp-title" placeholder="Software Engineer Intern"></div>
+        <div class="form-group"><label class="form-label">Company</label><input type="text" class="form-input" id="opp-company" placeholder="Tech Corp"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-select" id="opp-type"><option value="INTERNSHIP">Internship</option><option value="SCHOLARSHIP">Scholarship</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Mode</label>
+          <select class="form-select" id="opp-mode"><option value="ONSITE">On-site</option><option value="REMOTE">Remote</option><option value="HYBRID">Hybrid</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-select" id="opp-status"><option value="OPEN">Open</option><option value="CLOSED">Closed</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Location</label><input type="text" class="form-input" id="opp-location" placeholder="Cameroon"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="opp-description" placeholder="Describe the opportunity..."></textarea></div>
+      <div class="form-group"><label class="form-label">Requirements</label><textarea class="form-textarea" id="opp-requirements" placeholder="Required skills, GPA, etc." style="min-height:80px;"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="form-group"><label class="form-label">Stipend</label><input type="text" class="form-input" id="opp-stipend" placeholder="XAF 10000/mo"></div>
+        <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-input" id="opp-duration" placeholder="3 months"></div>
+        <div class="form-group"><label class="form-label">Deadline</label><input type="date" class="form-input" id="opp-deadline"></div>
+      </div>
+      <div class="flex gap-12 mt-8">
+        <button class="btn btn-primary" id="saveOppBtn" onclick="saveOpportunity()">Save Opportunity</button>
+        <button class="btn btn-outline" onclick="closeModal('oppModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Application Status Modal -->
+<div class="modal-overlay" id="appStatusModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Update Application</h3>
+      <button class="modal-close" onclick="closeModal('appStatusModal')">✕</button>
+    </div>
+    <input type="hidden" id="appStatusId">
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label class="form-label">Student</label><p id="appStatusStudent" class="fw-700"></p></div>
+      <div class="form-group"><label class="form-label">Opportunity</label><p id="appStatusOpp" class="text-muted"></p></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="appStatusSelect">
+          <option value="PENDING">Pending</option>
+          <option value="REVIEWED">Reviewed</option>
+          <option value="ACCEPTED">Accepted</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Admin Notes</label><textarea class="form-textarea" id="appStatusNotes" placeholder="Add notes for this applicant..."></textarea></div>
+      <div class="flex gap-12">
+        <button class="btn btn-primary" onclick="saveAppStatus()">Update Status</button>
+        <button class="btn btn-outline" onclick="closeModal('appStatusModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+if (!requireAdmin()) {}
+
+document.getElementById('navbar-root').innerHTML = buildNav();
+const user = Auth.getUser();
+document.getElementById('adminWelcome').textContent = 'Welcome, ' + user?.first_name;
+
+document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+    showPage(link.dataset.page);
+  });
+});
+
+function showPage(page) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+  if (page === 'overview')     loadAdminOverview();
+  if (page === 'opportunities') loadAdminOpps();
+  if (page === 'applications') loadAdminApps();
+  if (page === 'students')     loadStudents();
+}
+
+async function loadAdminOverview() {
+  try {
+    const s = await apiFetch('/admin/stats/');
+    document.getElementById('a-students').textContent = s.total_students;
+    document.getElementById('a-opps').textContent     = s.total_opportunities;
+    document.getElementById('a-open').textContent     = s.open_opportunities;
+    document.getElementById('a-apps').textContent     = s.total_applications;
+    document.getElementById('a-pending').textContent  = s.pending_applications;
+    loadRecentAdminApps();
+  } catch(e) {}
+}
+
+async function loadRecentAdminApps() {
+  const c = document.getElementById('recentAdminApps');
+  try {
+    const data = await apiFetch('/admin/applications/');
+    const apps = (data.results||data).slice(0,8);
+    if (!apps.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><h3>No applications yet</h3></div>'; return; }
+    c.innerHTML = `<table><thead><tr><th>Student</th><th>Opportunity</th><th>Applied</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      ${apps.map(a=>`<tr><td class="fw-700">${a.student_name}</td><td>${a.opportunity_title}</td><td>${timeAgo(a.applied_at)}</td><td>${statusBadge(a.status)}</td><td><button class="btn btn-outline btn-sm" onclick="openAppStatus(${a.id},'${a.student_name}','${a.opportunity_title}','${a.status}','${(a.admin_notes||'').replace(/'/g,"\\'")}')">Review</button></td></tr>`).join('')}
+    </tbody></table>`;
+  } catch(e) {}
+}
+
+// Opportunities
+let adminOpps = [];
+async function loadAdminOpps() {
+  const c = document.getElementById('oppsAdminTable');
+  c.innerHTML = '<div class="flex-center" style="padding:40px;"><div class="spinner dark"></div></div>';
+  try {
+    const data = await apiFetch('/opportunities/');
+    adminOpps = data.results || data;
+    renderAdminOpps(adminOpps);
+  } catch(e) { c.innerHTML='<div class="empty-state"><div class="empty-icon">⚠</div><h3>Error loading</h3></div>'; }
+}
+function renderAdminOpps(list) {
+  const c = document.getElementById('oppsAdminTable');
+  if (!list.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📌</div><h3>No opportunities yet</h3><p>Add your first opportunity above.</p></div>'; return; }
+  c.innerHTML = `<table><thead><tr><th>Title</th><th>Company</th><th>Type</th><th>Mode</th><th>Deadline</th><th>Status</th><th>Apps</th><th>Actions</th></tr></thead><tbody>
+    ${list.map(o=>`<tr>
+      <td class="fw-700">${o.title}</td>
+      <td>${o.company}</td>
+      <td>${statusBadge(o.type)}</td>
+      <td><span class="badge badge-gray">${o.mode}</span></td>
+      <td>${formatDate(o.deadline)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${o.application_count}</td>
+      <td style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="editOpp(${o.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOpp(${o.id})">Del</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+const doAdminOppSearch = debounce(() => {
+  const q = document.getElementById('adminOppSearch').value.toLowerCase();
+  const t = document.getElementById('adminOppType').value;
+  const s = document.getElementById('adminOppStatus').value;
+  renderAdminOpps(adminOpps.filter(o =>
+    (!q || o.title.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)) &&
+    (!t || o.type === t) && (!s || o.status === s)
+  ));
+});
+document.getElementById('adminOppSearch').addEventListener('input', doAdminOppSearch);
+document.getElementById('adminOppType').addEventListener('change', doAdminOppSearch);
+document.getElementById('adminOppStatus').addEventListener('change', doAdminOppSearch);
+
+function openOppModal(opp=null) {
+  document.getElementById('oppEditId').value = opp?.id || '';
+  document.getElementById('oppModalTitle').textContent = opp ? 'Edit Opportunity' : 'Add Opportunity';
+  document.getElementById('opp-title').value        = opp?.title || '';
+  document.getElementById('opp-company').value      = opp?.company || '';
+  document.getElementById('opp-type').value         = opp?.type || 'INTERNSHIP';
+  document.getElementById('opp-mode').value         = opp?.mode || 'ONSITE';
+  document.getElementById('opp-status').value       = opp?.status || 'OPEN';
+  document.getElementById('opp-location').value     = opp?.location || '';
+  document.getElementById('opp-description').value  = opp?.description || '';
+  document.getElementById('opp-requirements').value = opp?.requirements || '';
+  document.getElementById('opp-stipend').value      = opp?.stipend || '';
+  document.getElementById('opp-duration').value     = opp?.duration || '';
+  document.getElementById('opp-deadline').value     = opp?.deadline || '';
+  openModal('oppModal');
+}
+function editOpp(id) {
+  const opp = adminOpps.find(o => o.id === id);
+  if (opp) openOppModal(opp);
+}
+async function deleteOpp(id) {
+  if (!confirm('Delete this opportunity? This cannot be undone.')) return;
+  try { await apiFetch(`/opportunities/${id}/`,{method:'DELETE'}); toast('Deleted','success'); loadAdminOpps(); }
+  catch(e) { toast(e.message,'error'); }
+}
+async function saveOpportunity() {
+  const id  = document.getElementById('oppEditId').value;
+  const btn = document.getElementById('saveOppBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
+  const body = {
+    title:        document.getElementById('opp-title').value,
+    company:      document.getElementById('opp-company').value,
+    type:         document.getElementById('opp-type').value,
+    mode:         document.getElementById('opp-mode').value,
+    status:       document.getElementById('opp-status').value,
+    location:     document.getElementById('opp-location').value,
+    description:  document.getElementById('opp-description').value,
+    requirements: document.getElementById('opp-requirements').value,
+    stipend:      document.getElementById('opp-stipend').value,
+    duration:     document.getElementById('opp-duration').value,
+    deadline:     document.getElementById('opp-deadline').value || null,
+  };
+  try {
+    if (id) { await apiFetch(`/opportunities/${id}/`,{method:'PATCH',body:JSON.stringify(body)}); }
+    else     { await apiFetch('/opportunities/',{method:'POST',body:JSON.stringify(body)}); }
+    toast(id?'Opportunity updated!':'Opportunity added!','success');
+    closeModal('oppModal'); loadAdminOpps();
+  } catch(e) { toast(e.message,'error'); }
+  btn.disabled=false; btn.innerHTML='Save Opportunity';
+}
+
+// Applications
+let adminApps = [];
+async function loadAdminApps() {
+  const c = document.getElementById('appsAdminTable');
+  c.innerHTML = '<div class="flex-center" style="padding:40px;"><div class="spinner dark"></div></div>';
+  try {
+    const data = await apiFetch('/admin/applications/');
+    adminApps = data.results || data;
+    renderAdminApps(adminApps);
+  } catch(e) {}
+}
+function renderAdminApps(list) {
+  const c = document.getElementById('appsAdminTable');
+  if (!list.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><h3>No applications</h3></div>'; return; }
+  c.innerHTML = `<table><thead><tr><th>Student</th><th>Email</th><th>Opportunity</th><th>Applied</th><th>Status</th><th>Action</th></tr></thead><tbody>
+    ${list.map(a=>`<tr>
+      <td class="fw-700">${a.student_name}</td>
+      <td class="text-muted text-sm">${a.student_email}</td>
+      <td>${a.opportunity_title}</td>
+      <td>${timeAgo(a.applied_at)}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openAppStatus(${a.id},'${a.student_name}','${a.opportunity_title}','${a.status}','${(a.admin_notes||'').replace(/'/g,"\\'")}')">Review</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+const doAdminAppSearch = debounce(() => {
+  const q = document.getElementById('adminAppSearch').value.toLowerCase();
+  const s = document.getElementById('adminAppStatus').value;
+  renderAdminApps(adminApps.filter(a =>
+    (!q || a.student_name.toLowerCase().includes(q) || a.opportunity_title.toLowerCase().includes(q)) &&
+    (!s || a.status === s)
+  ));
+});
+document.getElementById('adminAppSearch').addEventListener('input', doAdminAppSearch);
+document.getElementById('adminAppStatus').addEventListener('change', doAdminAppSearch);
+
+function openAppStatus(id, student, opp, status, notes) {
+  document.getElementById('appStatusId').value = id;
+  document.getElementById('appStatusStudent').textContent = student;
+  document.getElementById('appStatusOpp').textContent = opp;
+  document.getElementById('appStatusSelect').value = status;
+  document.getElementById('appStatusNotes').value = notes;
+  openModal('appStatusModal');
+}
+async function saveAppStatus() {
+  const id = document.getElementById('appStatusId').value;
+  try {
+    await apiFetch(`/admin/applications/${id}/`,{method:'PATCH',body:JSON.stringify({
+      status: document.getElementById('appStatusSelect').value,
+      admin_notes: document.getElementById('appStatusNotes').value,
+    })});
+    toast('Application updated!','success');
+    closeModal('appStatusModal'); loadAdminApps();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// Students
+let allStudents = [];
+async function loadStudents() {
+  const c = document.getElementById('studentsTable');
+  c.innerHTML = '<div class="flex-center" style="padding:40px;"><div class="spinner dark"></div></div>';
+  try {
+    const data = await apiFetch('/admin/students/');
+    allStudents = data.results || data;
+    renderStudents(allStudents);
+  } catch(e) {}
+}
+function renderStudents(list) {
+  const c = document.getElementById('studentsTable');
+  if (!list.length) { c.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><h3>No students yet</h3></div>'; return; }
+  c.innerHTML = `<table><thead><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead><tbody>
+    ${list.map(s=>`<tr><td class="fw-700">${s.full_name}</td><td>${s.email}</td><td>${timeAgo(s.created_at)}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+document.getElementById('studentSearch').addEventListener('input', debounce(e => {
+  const q = e.target.value.toLowerCase();
+  renderStudents(allStudents.filter(s => s.full_name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)));
+}));
+
+loadAdminOverview();
+</script>
+<script>
+async function loadTeamMembers(){
+ const box=document.getElementById('teamMembers');
+ if(!box)return;
+ const data=await apiFetch('/admin/team/');
+ box.innerHTML=data.map(t=>`<div><b>${t.name}</b> - ${t.role}</div>`).join('');
+}
+</script>
+</body>
+</html>

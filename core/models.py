@@ -160,3 +160,18 @@ class Application(models.Model):
 
     def __str__(self):
         return f'{self.student.full_name} → {self.opportunity.title}'
+
+
+class TeamMember(models.Model):
+    name = models.CharField(max_length=150)
+    role = models.CharField(max_length=150)
+    bio = models.TextField(blank=True)
+    email = models.EmailField(blank=True)
+    image = models.ImageField(upload_to='team/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

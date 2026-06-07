@@ -3,10 +3,11 @@ InternLink – Django Settings
 """
 
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-change-this-in-production-use-env-variable'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-use-env-variable')
 
 DEBUG = True
 
@@ -62,7 +63,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'internlink.wsgi.application'
 
 # ─── Database ────────────────────────────────────────────────────────────────
-# SQLite for development — swap for PostgreSQL/MySQL in production
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -78,7 +78,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-AUTH_USER_MODEL = 'core.User'   # our custom user model
+AUTH_USER_MODEL = 'core.User'
 
 # ─── REST Framework ──────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
@@ -93,7 +93,7 @@ REST_FRAMEWORK = {
 }
 
 # ─── CORS ────────────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = True          # restrict to your frontend domain in production
+CORS_ALLOW_ALL_ORIGINS = True
 
 # ─── Static & Media ──────────────────────────────────────────────────────────
 STATIC_URL  = '/static/'
@@ -108,3 +108,19 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'UTC'
 USE_I18N      = True
 USE_TZ        = True
+
+# ─── Render Deployment ───────────────────────────────────────────────────────
+if 'RENDER' in os.environ:
+    DEBUG = False
+    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        'https://' + os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
+    ]
+
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
+        'whitenoise.middleware.WhiteNoiseMiddleware'
+    )
+
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
