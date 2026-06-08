@@ -1,0 +1,100 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+/* Background */
+body{
+    display:flex;
+    background:linear-gradient(135deg,#0f172a,#1e3a8a);
+    color:white;
+}
+
+/* Sidebar */
+.sidebar{
+    width:200px;
+    height:100vh;
+    background:#0b1220;
+    padding:20px;
+}
+
+.sidebar h2{
+    color:#60a5fa;
+    margin-bottom:30px;
+}
+
+.sidebar p{
+    margin:20px 0;
+    cursor:pointer;
+    color:#cbd5e1;
+}
+
+/* Main */
+.main{
+    flex:1;
+    padding:30px;
+}
+
+/* Top bar */
+.topbar h1{
+    margin-bottom:10px;
+}
+
+.topbar input{
+    width:300px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    outline:none;
+}
+
+/* Profile card */
+.profile-card{
+    background:rgba(255,255,255,0.08);
+    padding:20px;
+    border-radius:15px;
+    margin-top:20px;
+    backdrop-filter:blur(10px);
+}
+
+/* Section title */
+.section-title{
+    margin:25px 0 15px;
+}
+
+/* Grid */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+/* Cards */
+.card{
+    background:rgba(255,255,255,0.08);
+    padding:20px;
+    border-radius:15px;
+    backdrop-filter:blur(10px);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+/* Button */
+button{
+    margin-top:10px;
+    padding:8px 12px;
+    border:none;
+    border-radius:8px;
+    background:#3b82f6;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2563eb;
+}
