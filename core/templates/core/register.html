@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — InternLink</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--cream); padding:24px; }
+    .auth-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-xl); padding:48px; width:100%; max-width:480px; box-shadow:var(--shadow-lg); }
+    .auth-logo { font-family:var(--font-head); font-size:20px; font-weight:800; margin-bottom:32px; display:flex; align-items:center; gap:6px; }
+    .auth-logo span { color:var(--accent2); }
+    .auth-title { font-size:28px; font-weight:800; margin-bottom:6px; }
+    .auth-sub { color:var(--muted); font-size:14px; margin-bottom:32px; }
+    .form-stack { display:flex; flex-direction:column; gap:18px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  </style>
+</head>
+<body>
+<div class="auth-card">
+  <a href="/" class="auth-logo">Intern<span>Link</span><div class="logo-dot"></div></a>
+  <h1 class="auth-title">Create your account</h1>
+  <p class="auth-sub">Free forever. No credit card needed.</p>
+
+  <form class="form-stack" id="registerForm">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input type="text" class="form-input" id="firstName" placeholder="John" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input type="text" class="form-input" id="lastName" placeholder="Doe" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email address</label>
+      <input type="email" class="form-input" id="email" placeholder="you@example.com" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" class="form-input" id="password" placeholder="Min. 6 characters" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirm Password</label>
+      <input type="password" class="form-input" id="password2" placeholder="Repeat your password" required>
+    </div>
+    <button type="submit" class="btn btn-primary w-full" id="submitBtn" style="justify-content:center;padding:14px;margin-top:4px;">
+      Create Account
+    </button>
+  </form>
+
+  <p class="text-center text-sm text-muted mt-24">
+    Already have an account? <a href="/login/" style="color:var(--accent2);font-weight:600;">Sign in</a>
+  </p>
+</div>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+  redirectIfLoggedIn();
+
+  document.getElementById('registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const p1  = document.getElementById('password').value;
+    const p2  = document.getElementById('password2').value;
+
+    if (p1 !== p2) { toast('Passwords do not match.', 'error'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating account...';
+
+    try {
+      const data = await apiFetch('/auth/register/', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: document.getElementById('firstName').value,
+          last_name:  document.getElementById('lastName').value,
+          email:      document.getElementById('email').value,
+          password:   p1,
+          password2:  p2,
+        })
+      });
+      Auth.setAuth(data.token, data.user);
+      toast('Account created! Welcome to InternLink.', 'success');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Create Account';
+    }
+  });
+</script>
+</body>
+</html>

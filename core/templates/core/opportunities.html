@@ -1,0 +1,282 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opportunities — InternLink</title>
+  <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  <style>
+    body { padding-top:68px; }
+    .opp-layout { display:grid; grid-template-columns:280px 1fr; gap:32px; align-items:start; }
+    .filter-panel { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; position:sticky; top:88px; }
+    .filter-panel h3 { font-size:15px; font-weight:700; margin-bottom:16px; }
+    .filter-group { margin-bottom:24px; }
+    .filter-group label { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:10px; }
+    .filter-chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .chip { padding:6px 14px; border-radius:var(--r-full); border:1.5px solid var(--border); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; background:var(--white); }
+    .chip:hover { border-color:var(--ink); }
+    .chip.active { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+    .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .results-count { font-size:14px; color:var(--muted); }
+    .opp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+    .opp-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; transition:all .22s; cursor:pointer; }
+    .opp-card:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); border-color:rgba(0,0,0,0.15); }
+    .opp-company { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .opp-title { font-size:17px; font-weight:700; margin-bottom:10px; line-height:1.3; }
+    .opp-meta { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+    .opp-detail { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+    .opp-desc { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:16px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .opp-footer { display:flex; align-items:center; justify-content:space-between; padding-top:16px; border-top:1px solid var(--border); }
+    .deadline-badge { font-size:12px; color:var(--muted); }
+    .deadline-badge.urgent { color:var(--danger); font-weight:600; }
+
+    /* Detail panel */
+    .detail-overlay { position:fixed; inset:0; z-index:1500; display:flex; justify-content:flex-end; pointer-events:none; }
+    .detail-overlay.open { pointer-events:all; }
+    .detail-backdrop { position:absolute; inset:0; background:rgba(13,13,13,0.4); opacity:0; transition:opacity .3s; }
+    .detail-overlay.open .detail-backdrop { opacity:1; }
+    .detail-panel { position:relative; width:520px; background:var(--white); height:100%; overflow-y:auto; padding:40px; transform:translateX(100%); transition:transform .35s cubic-bezier(.4,0,.2,1); box-shadow:var(--shadow-xl); }
+    .detail-overlay.open .detail-panel { transform:translateX(0); }
+    .detail-close { position:absolute; top:20px; right:20px; width:36px; height:36px; border-radius:50%; background:var(--cream); border:none; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
+    .detail-type { margin-bottom:12px; }
+    .detail-title { font-size:26px; font-weight:800; margin-bottom:6px; }
+    .detail-company { font-size:16px; color:var(--muted); margin-bottom:24px; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+    .detail-item label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); display:block; margin-bottom:4px; }
+    .detail-item span { font-size:14px; font-weight:600; }
+    .detail-section { margin-bottom:24px; }
+    .detail-section h4 { font-size:14px; font-weight:700; margin-bottom:10px; }
+    .detail-section p { font-size:14px; color:var(--muted); line-height:1.7; white-space:pre-wrap; }
+
+    @media(max-width:900px) { .opp-layout { grid-template-columns:1fr; } .filter-panel { position:static; } }
+  </style>
+</head>
+<body>
+<div id="navbar-root"></div>
+
+<div class="page-header">
+  <div class="container">
+    <h1>Browse Opportunities</h1>
+    <p>Find internships and scholarships that match your goals</p>
+  </div>
+</div>
+
+<div class="container section" style="padding-top:0;">
+  <div class="opp-layout">
+
+    <!-- Filters -->
+    <aside class="filter-panel">
+      <h3>Filters</h3>
+      <div class="form-group mb-24">
+        <input type="text" class="form-input" id="searchInput" placeholder="🔍  Search...">
+      </div>
+      <div class="filter-group">
+        <label>Type</label>
+        <div class="filter-chips">
+          <div class="chip active" data-filter="type" data-val="">All</div>
+          <div class="chip" data-filter="type" data-val="INTERNSHIP">Internship</div>
+          <div class="chip" data-filter="type" data-val="SCHOLARSHIP">Scholarship</div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Mode</label>
+        <div class="filter-chips">
+          <div class="chip active" data-filter="mode" data-val="">All</div>
+          <div class="chip" data-filter="mode" data-val="REMOTE">Remote</div>
+          <div class="chip" data-filter="mode" data-val="ONSITE">On-site</div>
+          <div class="chip" data-filter="mode" data-val="HYBRID">Hybrid</div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Sort by</label>
+        <select class="form-select" id="sortBy">
+          <option value="-created_at">Newest first</option>
+          <option value="deadline">Deadline (soon)</option>
+          <option value="title">Title A-Z</option>
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm w-full" onclick="clearFilters()">Clear Filters</button>
+    </aside>
+
+    <!-- Results -->
+    <div>
+      <div class="results-header">
+        <span class="results-count" id="resultsCount">Loading...</span>
+        <select class="form-select" id="pageSize" style="width:140px;">
+          <option value="12">12 per page</option>
+          <option value="24">24 per page</option>
+          <option value="48">48 per page</option>
+        </select>
+      </div>
+      <div class="opp-grid" id="oppGrid">
+        <div class="flex-center" style="grid-column:1/-1;padding:80px;"><div class="spinner dark" style="width:32px;height:32px;"></div></div>
+      </div>
+      <div id="pagination" class="flex-center gap-8 mt-32"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-backdrop" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detailPanel">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- Apply Modal -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="applyTitle">Apply</h3>
+      <button class="modal-close" onclick="closeModal('applyModal')">✕</button>
+    </div>
+    <input type="hidden" id="applyOppId">
+    <div class="form-group">
+      <label class="form-label">Cover Letter <span class="text-muted">(optional but recommended)</span></label>
+      <textarea class="form-textarea" id="coverLetter" placeholder="Tell them why you are the right person..." style="min-height:180px;"></textarea>
+    </div>
+    <div class="flex gap-12 mt-24">
+      <button class="btn btn-primary" id="submitApplyBtn" onclick="submitApplication()">Submit Application</button>
+      <button class="btn btn-outline" onclick="closeModal('applyModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'core/app.js' %}"></script>
+<script>
+document.getElementById('navbar-root').innerHTML = buildNav('opportunities');
+
+let allOpps = [], filters = { type:'', mode:'' }, currentDetail = null;
+
+async function loadOpps() {
+  try {
+    const data = await apiFetch('/opportunities/');
+    allOpps = data.results || data;
+    renderOpps();
+  } catch(e) {
+    document.getElementById('oppGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">😕</div><h3>Could not load opportunities</h3><p>Make sure the backend is running.</p></div>';
+  }
+}
+
+function isUrgent(deadline) {
+  if (!deadline) return false;
+  return (new Date(deadline) - Date.now()) < 7 * 86400000;
+}
+
+function renderOpps() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortBy').value;
+  let list = allOpps.filter(o =>
+    (!filters.type || o.type === filters.type) &&
+    (!filters.mode || o.mode === filters.mode) &&
+    (!q || o.title.toLowerCase().includes(q) || o.company.toLowerCase().includes(q) || o.description.toLowerCase().includes(q))
+  );
+  if (sort === 'title')    list.sort((a,b) => a.title.localeCompare(b.title));
+  if (sort === 'deadline') list.sort((a,b) => new Date(a.deadline||'9999') - new Date(b.deadline||'9999'));
+
+  document.getElementById('resultsCount').textContent = `${list.length} opportunit${list.length===1?'y':'ies'} found`;
+  const grid = document.getElementById('oppGrid');
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No results</h3><p>Try different filters or search terms.</p></div>'; return; }
+
+  grid.innerHTML = list.map(o => `
+    <div class="opp-card" onclick="openDetail(${o.id})">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        ${statusBadge(o.type)} <span class="badge badge-gray">${o.mode}</span>
+      </div>
+      <div class="opp-company">${o.company}${o.location ? ' • '+o.location : ''}</div>
+      <div class="opp-title">${o.title}</div>
+      <div class="opp-meta">
+        ${o.stipend ? `<span class="opp-detail">💰 ${o.stipend}</span>` : ''}
+        ${o.duration ? `<span class="opp-detail">⏱ ${o.duration}</span>` : ''}
+      </div>
+      <p class="opp-desc">${o.description}</p>
+      <div class="opp-footer">
+        <span class="deadline-badge ${isUrgent(o.deadline)?'urgent':''}">
+          ${o.deadline ? (isUrgent(o.deadline)?'⚠ ':'')+formatDate(o.deadline) : 'No deadline'}
+        </span>
+        ${o.has_applied
+          ? '<span class="badge badge-green">✓ Applied</span>'
+          : '<span class="badge badge-gray">'+o.application_count+' applied</span>'
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDetail(id) {
+  const o = allOpps.find(x => x.id === id);
+  if (!o) return;
+  currentDetail = o;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-type">${statusBadge(o.type)} <span class="badge badge-gray" style="margin-left:6px;">${o.mode}</span></div>
+    <div class="detail-title">${o.title}</div>
+    <div class="detail-company">${o.company}${o.location ? ' • '+o.location : ''}</div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Stipend</label><span>${o.stipend || 'Not specified'}</span></div>
+      <div class="detail-item"><label>Duration</label><span>${o.duration || 'Not specified'}</span></div>
+      <div class="detail-item"><label>Deadline</label><span>${formatDate(o.deadline)}</span></div>
+      <div class="detail-item"><label>Applications</label><span>${o.application_count}</span></div>
+    </div>
+    <div class="detail-section"><h4>About this opportunity</h4><p>${o.description}</p></div>
+    ${o.requirements ? `<div class="detail-section"><h4>Requirements</h4><p>${o.requirements}</p></div>` : ''}
+    <div style="margin-top:32px;">
+      ${o.has_applied
+        ? '<button class="btn btn-outline w-full" disabled style="justify-content:center;">✓ Already Applied</button>'
+        : Auth.isLoggedIn()
+          ? `<button class="btn btn-primary btn-lg w-full" onclick="openApply(${o.id},'${o.title.replace(/'/g,"\\'")}')" style="justify-content:center;">Apply Now →</button>`
+          : `<a href="/login/" class="btn btn-primary btn-lg w-full" style="justify-content:center;">Login to Apply</a>`
+      }
+    </div>
+  `;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+function openApply(id, title) {
+  document.getElementById('applyOppId').value = id;
+  document.getElementById('applyTitle').textContent = 'Apply — '+title;
+  document.getElementById('coverLetter').value = '';
+  closeDetail();
+  openModal('applyModal');
+}
+async function submitApplication() {
+  const btn = document.getElementById('submitApplyBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Submitting...';
+  try {
+    await apiFetch('/applications/',{method:'POST',body:JSON.stringify({
+      opportunity: parseInt(document.getElementById('applyOppId').value),
+      cover_letter: document.getElementById('coverLetter').value
+    })});
+    toast('Application submitted!','success');
+    closeModal('applyModal');
+    loadOpps();
+  } catch(e) { toast(e.message,'error'); }
+  btn.disabled=false; btn.innerHTML='Submit Application';
+}
+
+// Chips
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const f = chip.dataset.filter;
+    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filters[f] = chip.dataset.val;
+    renderOpps();
+  });
+});
+function clearFilters() {
+  filters = {type:'',mode:''};
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.val === ''));
+  document.getElementById('searchInput').value = '';
+  renderOpps();
+}
+document.getElementById('searchInput').addEventListener('input', debounce(renderOpps));
+document.getElementById('sortBy').addEventListener('change', renderOpps);
+
+loadOpps();
+</script>
+</body>
+</html>

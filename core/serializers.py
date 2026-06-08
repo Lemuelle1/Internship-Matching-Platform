@@ -148,3 +148,11 @@ class ApplicationStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Application
         fields = ['status', 'admin_notes']
+
+
+from .models import TeamMember
+
+class TeamMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamMember
+        fields = '__all__'

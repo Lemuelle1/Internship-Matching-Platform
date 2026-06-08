@@ -3,12 +3,17 @@ InternLink – Django Settings
 """
 
 from pathlib import Path
+import os
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-change-this-in-production-use-env-variable'
+# ─── Security & Basic Settings ───────────────────────────────────────────────
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-use-env-variable')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -25,14 +30,21 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'whitenoise.runserver_nostatic',   # For better static serving
+
+    # Cloudinary (Important order)
+    'cloudinary_storage',
+    'cloudinary',
 
     # Our app
     'core',
 ]
 
+# ─── Middleware ──────────────────────────────────────────────────────────────
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',          # must be first
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   # Must be early
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,7 +74,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'internlink.wsgi.application'
 
 # ─── Database ────────────────────────────────────────────────────────────────
-# SQLite for development — swap for PostgreSQL/MySQL in production
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -78,7 +89,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-AUTH_USER_MODEL = 'core.User'   # our custom user model
+AUTH_USER_MODEL = 'core.User'
 
 # ─── REST Framework ──────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
@@ -93,18 +104,35 @@ REST_FRAMEWORK = {
 }
 
 # ─── CORS ────────────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = True          # restrict to your frontend domain in production
+CORS_ALLOW_ALL_ORIGINS = True
 
-# ─── Static & Media ──────────────────────────────────────────────────────────
-STATIC_URL  = '/static/'
+# ─── Cloudinary Settings ─────────────────────────────────────────────────────
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('dhi2tp8n9'),
+    'API_KEY': os.environ.get('898662315457782'),
+    'API_SECRET': os.environ.get('FG4q7uXYoHnRw6uGKga_SLTeN0w'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# ─── Static & Media Files ────────────────────────────────────────────────────
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE     = 'UTC'
-USE_I18N      = True
-USE_TZ        = True
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# ─── Production Settings (Render) ────────────────────────────────────────────
+if not DEBUG:
+    ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME', '*')]
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}"
+    ]

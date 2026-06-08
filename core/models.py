@@ -5,6 +5,7 @@ All database models for InternLink.
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from cloudinary.models import CloudinaryField   # ← Cloudinary Import
 
 
 # ─── Custom User Manager ─────────────────────────────────────────────────────
@@ -154,9 +155,28 @@ class Application(models.Model):
     updated_at     = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # One student can only apply once per opportunity
         unique_together = ('student', 'opportunity')
         ordering        = ['-applied_at']
 
     def __str__(self):
         return f'{self.student.full_name} → {self.opportunity.title}'
+
+
+# ─── Team Member ─────────────────────────────────────────────────────────────
+
+class TeamMember(models.Model):
+    name = models.CharField(max_length=150)
+    role = models.CharField(max_length=150)
+    bio = models.TextField(blank=True)
+    email = models.EmailField(blank=True)
+    
+    # Cloudinary Field for images (best for Render)
+    image = CloudinaryField('image', blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
